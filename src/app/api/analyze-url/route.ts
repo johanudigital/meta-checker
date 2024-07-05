@@ -14,11 +14,11 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a URL analyzer. Analyze the given URL and provide detailed information about its content, purpose, and potential risks or benefits."
+          content: "You are an expert content writer and SEO specialist. You write the ultimate meta titles and meta descriptions based on an URL."
         },
         {
           role: "user",
-          content: `Analyze this URL: ${url}`
+          content: `Write a meta title and meta description based on the website content retrieved from this URL: ${url}`
         }
       ],
     });
