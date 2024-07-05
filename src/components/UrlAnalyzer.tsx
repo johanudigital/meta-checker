@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
+interface AnalysisResult {
+  safety: string;
+  content: string;
+  sentiment: string;
+}
+
 const UrlAnalyzer = () => {
-  const [url, setUrl] = useState('');
-  const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [url, setUrl] = useState<string>('');
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const analyzeUrl = async () => {
     setLoading(true);
