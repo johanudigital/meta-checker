@@ -1,3 +1,5 @@
+'use client';
+
 import UrlAnalyzer from '@/components/UrlAnalyzer';
 
 export default function Home() {
