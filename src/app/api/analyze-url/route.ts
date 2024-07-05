@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       ],
     });
 
-    const analysis = completion.choices[0].message.content;
+    const analysis = completion.choices[0]?.message?.content || '';
     
     // Parse the analysis string to extract structured data
     const safety = analysis.toLowerCase().includes('safe') ? 'safe' : 'unsafe';
