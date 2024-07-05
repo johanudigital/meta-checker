@@ -4,12 +4,10 @@ import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface AnalysisResult {
-  safety: string;
-  content: string;
-  sentiment: string;
+  analysis: string;
 }
 
 const UrlAnalyzer = () => {
@@ -70,12 +68,7 @@ const UrlAnalyzer = () => {
           {analysis && (
             <div className="space-y-2">
               <h3 className="font-semibold">Analysis Results:</h3>
-              <p>
-                <CheckCircle className="inline mr-2" color={analysis.safety === 'safe' ? 'green' : 'red'} />
-                Safety: {analysis.safety}
-              </p>
-              <p>Content Type: {analysis.content}</p>
-              <p>Sentiment: {analysis.sentiment}</p>
+              <p className="whitespace-pre-wrap">{analysis.analysis}</p>
             </div>
           )}
         </div>
