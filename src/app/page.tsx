@@ -28,7 +28,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <h3 className="text-xl font-semibold mb-4">Content Analysis</h3>
-              <p className="text-gray-600">Understand the type of content you're about to access.</p>
+              <p className="text-gray-600">Understand the type of content you&apos;re about to access.</p>
             </div>
             <div className="text-center">
               <h3 className="text-xl font-semibold mb-4">Sentiment Evaluation</h3>
