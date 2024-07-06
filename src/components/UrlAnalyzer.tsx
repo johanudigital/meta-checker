@@ -39,11 +39,11 @@ const UrlAnalyzer = () => {
   };
 
   return (
-    <Card className="w-full max-w-xl mx-auto bg-transparent shadow-none">
-      <CardHeader className="px-0">
+    <Card className="w-full max-w-xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+      <CardHeader className="bg-gray-50 border-b border-gray-200">
         <CardTitle className="text-xl font-semibold text-gray-800">URL Analyzer</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 space-y-6">
+      <CardContent className="p-6 space-y-6">
         <div className="flex space-x-2">
           <Input
             type="url"
