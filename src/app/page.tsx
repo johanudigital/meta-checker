@@ -11,9 +11,7 @@ export default function Home() {
             <p className="text-xl text-gray-600 mb-10">
               Get instant insights on safety, content type, and sentiment for any URL.
             </p>
-            <div className="bg-white p-8 rounded-lg shadow-md">
-              <UrlAnalyzer />
-            </div>
+            <UrlAnalyzer />
           </div>
         </div>
       </section>
