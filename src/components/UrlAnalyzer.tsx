@@ -1,10 +1,9 @@
 'use client';
-
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface AnalysisResult {
   analysis: string;
@@ -27,11 +26,9 @@ const UrlAnalyzer = () => {
         },
         body: JSON.stringify({ url }),
       });
-
       if (!response.ok) {
         throw new Error('Failed to analyze URL');
       }
-
       const data = await response.json();
       setAnalysis(data);
     } catch (err) {
@@ -42,36 +39,41 @@ const UrlAnalyzer = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>URL Analyzer</CardTitle>
+    <Card className="w-full max-w-xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+      <CardHeader className="bg-gray-50 border-b border-gray-200">
+        <CardTitle className="text-xl font-semibold text-gray-800">URL Analyzer</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-6 space-y-6">
+        <div className="flex space-x-2">
           <Input
             type="url"
             placeholder="Enter URL to analyze"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            className="flex-grow"
           />
-          <Button onClick={analyzeUrl} disabled={!url || loading} className="w-full">
-            {loading ? 'Analyzing...' : 'Analyze URL'}
+          <Button 
+            onClick={analyzeUrl} 
+            disabled={!url || loading}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+          >
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Analyze'}
           </Button>
-          
-          {error && (
-            <div className="flex items-center text-red-500">
-              <AlertCircle className="mr-2" />
-              {error}
-            </div>
-          )}
-          
-          {analysis && (
-            <div className="space-y-2">
-              <h3 className="font-semibold">Analysis Results:</h3>
-              <p className="whitespace-pre-wrap">{analysis.analysis}</p>
-            </div>
-          )}
         </div>
+        
+        {error && (
+          <div className="flex items-center text-red-500 bg-red-50 p-3 rounded-md">
+            <AlertCircle className="mr-2 h-5 w-5" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+        
+        {analysis && (
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h3 className="font-semibold text-gray-800 mb-2">Analysis Results:</h3>
+            <p className="text-gray-600 whitespace-pre-wrap">{analysis.analysis}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
