@@ -22,9 +22,12 @@ export default function RootLayout({
         <header className="fixed w-full bg-white bg-opacity-90 backdrop-blur-md z-50">
           <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
             <Link href="/" className="text-2xl font-semibold">URL Analyzer Pro</Link>
-            <ul className="flex space-x-8">
+            <ul className="flex space-x-4 sm:space-x-8">
               <li><Link href="/features" className="hover:text-gray-600 transition-colors">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-gray-600 transition-colors">Pricing</Link></li>
+              <li><Link href="/seo-tools" className="hover:text-gray-600 transition-colors">SEO Tools</Link></li>
+              <li><Link href="/social-tools" className="hover:text-gray-600 transition-colors">Social Tools</Link></li>
+              <li><Link href="/graphic-tools" className="hover:text-gray-600 transition-colors">Graphic Tools</Link></li>
               <li><Link href="/about" className="hover:text-gray-600 transition-colors">About</Link></li>
               <li><Link href="/contact" className="hover:text-gray-600 transition-colors">Contact</Link></li>
             </ul>
