@@ -26,6 +26,8 @@ export default function StructuredDataTool() {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Code);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<ValidationResult | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiOptimization, setAiOptimization] = useState<string | null>(null);
 
   const extractJsonLd = (html: string): string[] => {
   const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
@@ -92,6 +94,52 @@ const handleSubmit = async () => {
   }
 };
 
+  const handleAiAnalysis = async () => {
+    if (!results?.isValid || !results.data) {
+      alert('Please validate your structured data first.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/analyze-structured-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredData: results.data }),
+      });
+
+      if (!response.ok) throw new Error('Failed to analyze structured data');
+
+      const data = await response.json();
+      setAiAnalysis(data.analysis);
+    } catch (error) {
+      console.error('Error analyzing structured data:', error);
+      setAiAnalysis('Failed to analyze structured data');
+    }
+  };
+
+  const handleAiOptimization = async () => {
+    if (!results?.isValid || !results.data) {
+      alert('Please validate your structured data first.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/optimize-structured-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredData: results.data }),
+      });
+
+      if (!response.ok) throw new Error('Failed to optimize structured data');
+
+      const data = await response.json();
+      setAiOptimization(data.optimization);
+    } catch (error) {
+      console.error('Error optimizing structured data:', error);
+      setAiOptimization('Failed to optimize structured data');
+    }
+  };
+  
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Structured Data Tool</h1>
@@ -139,10 +187,30 @@ const handleSubmit = async () => {
                   </pre>
                 </div>
               ))}
+              <div className="mt-4 space-x-2">
+                <Button onClick={handleAiAnalysis} className="bg-blue-500 text-white">
+                  Analyze with AI
+                </Button>
+                <Button onClick={handleAiOptimization} className="bg-green-500 text-white">
+                  Optimize with AI
+                </Button>
+              </div>
             </>
           ) : (
             <p className="text-red-500">Error: {results.error}</p>
           )}
+        </Card>
+      )}
+      {aiAnalysis && (
+        <Card className="mt-4 p-4">
+          <h2 className="text-xl font-bold mb-2">AI Analysis</h2>
+          <p>{aiAnalysis}</p>
+        </Card>
+      )}
+      {aiOptimization && (
+        <Card className="mt-4 p-4">
+          <h2 className="text-xl font-bold mb-2">AI Optimization</h2>
+          <p>{aiOptimization}</p>
         </Card>
       )}
     </div>
