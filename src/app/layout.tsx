@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react';
 import Link from 'next/link'
-import NavBar from './components/NavBar'  // We'll create this component
+import NavBar from '../components/NavBar'
 
 const inter = Inter({ subsets: ['latin'] })
 
