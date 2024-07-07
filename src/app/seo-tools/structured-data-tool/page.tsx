@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
+import jsonld from 'jsonld';
+import { JsonLdDocumentLoader } from 'jsonld-document-loader';
 
 enum Tab {
   URL,
@@ -29,6 +31,11 @@ export default function StructuredDataTool() {
   const [aiOptimization, setAiOptimization] = useState<string | null>(null);
   const [activeResultTab, setActiveResultTab] = useState<'validation' | 'analysis' | 'optimization'>('validation');
 
+  useEffect(() => {
+    const documentLoader = new JsonLdDocumentLoader();
+    jsonld.documentLoader = documentLoader.documentLoader.bind(documentLoader);
+  }, []);
+
   const extractJsonLd = (html: string): string[] => {
     const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
     const matches = [];
@@ -44,16 +51,12 @@ export default function StructuredDataTool() {
     return matches;
   };
 
-  const validateJsonLd = (jsonString: string): StructuredData | null => {
+  const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
-      const parsed = JSON.parse(jsonString);
-      if (
-        typeof parsed === 'object' &&
-        parsed !== null &&
-        '@context' in parsed &&
-        '@type' in parsed
-      ) {
-        return parsed as StructuredData;
+      const expanded = await jsonld.expand(JSON.parse(jsonString));
+      if (expanded.length > 0) {
+        const compacted = await jsonld.compact(expanded[0], {});
+        return compacted as StructuredData;
       }
       return null;
     } catch (error) {
@@ -62,7 +65,7 @@ export default function StructuredDataTool() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     let jsonLdStrings: string[];
     if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
       jsonLdStrings = [input];
@@ -79,15 +82,15 @@ export default function StructuredDataTool() {
       return;
     }
 
-    const validatedData = jsonLdStrings.map(validateJsonLd).filter((data): data is StructuredData => data !== null);
+    const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
+    const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
 
     setResults({
-      isValid: validatedData.length > 0,
-      data: validatedData,
-      error: validatedData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+      isValid: filteredData.length > 0,
+      data: filteredData,
+      error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
     });
   };
-
   const handleAiAnalysis = async () => {
     if (!results?.isValid || !results.data) {
       alert('Please validate your structured data first.');
@@ -174,7 +177,7 @@ export default function StructuredDataTool() {
             </div>
           </Card>
         </div>
-
+        
         {/* Right Column */}
         <div className="w-full md:w-2/3">
           <Card className="p-4">
