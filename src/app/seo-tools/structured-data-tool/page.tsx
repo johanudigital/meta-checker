@@ -28,14 +28,20 @@ export default function StructuredDataTool() {
   const [results, setResults] = useState<ValidationResult | null>(null);
 
   const extractJsonLd = (html: string): string[] => {
-    const regex = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi;
-    const matches = [];
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      matches.push(match[1]);
+  const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
+  const matches = [];
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    try {
+      // Attempt to parse the JSON to ensure it's valid
+      const jsonData = JSON.parse(match[3].trim());
+      matches.push(JSON.stringify(jsonData));
+    } catch (error) {
+      console.error('Failed to parse JSON-LD:', error);
     }
-    return matches;
-  };
+  }
+  return matches;
+};
 
   const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
@@ -48,43 +54,43 @@ export default function StructuredDataTool() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (activeTab === Tab.Code) {
-      let jsonLdStrings: string[];
-      if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
-        // Input is likely JSON-LD
-        jsonLdStrings = [input];
-      } else {
-        // Input is likely HTML
-        jsonLdStrings = extractJsonLd(input);
-      }
-
-      if (jsonLdStrings.length === 0) {
-        setResults({
-          isValid: false,
-          data: null,
-          error: 'No JSON-LD found in the input'
-        });
-        return;
-      }
-
-      const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
-      const validData = validatedData.filter((data): data is StructuredData => data !== null);
-
-      setResults({
-        isValid: validData.length > 0,
-        data: validData,
-        error: validData.length === 0 ? 'Invalid JSON-LD' : null
-      });
+const handleSubmit = async () => {
+  if (activeTab === Tab.Code) {
+    let jsonLdStrings: string[];
+    if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
+      // Input is likely JSON-LD
+      jsonLdStrings = [input];
     } else {
-      // URL functionality will be implemented later
+      // Input is likely HTML
+      jsonLdStrings = extractJsonLd(input);
+    }
+
+    if (jsonLdStrings.length === 0) {
       setResults({
         isValid: false,
         data: null,
-        error: 'URL checking is not implemented yet'
+        error: 'No valid JSON-LD found in the input. Make sure the input contains properly formatted JSON-LD scripts.'
       });
+      return;
     }
-  };
+
+    const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
+    const validData = validatedData.filter((data): data is StructuredData => data !== null);
+
+    setResults({
+      isValid: validData.length > 0,
+      data: validData,
+      error: validData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+    });
+  } else {
+    // URL functionality will be implemented later
+    setResults({
+      isValid: false,
+      data: null,
+      error: 'URL checking is not implemented yet'
+    });
+  }
+};
 
   return (
     <div className="container mx-auto p-4">
