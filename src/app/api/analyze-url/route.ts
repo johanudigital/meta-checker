@@ -68,10 +68,11 @@ Here is the website URL to analyze: ${url}`
           console.warn(`Retrying request... (attempt ${attempt})`);
         }
       }
+      return undefined; // Return undefined if all retries fail
     };
 
     const completion = await getCompletion();
-    const analysis = completion.choices[0]?.message?.content || 'No analysis available';
+    const analysis = completion?.choices?.[0]?.message?.content || 'No analysis available';
 
     return NextResponse.json({ analysis });
   } catch (error) {
