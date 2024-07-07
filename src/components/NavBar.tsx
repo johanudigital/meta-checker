@@ -30,7 +30,7 @@ const NavBar = () => {
             {isOpen && (
               <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                 <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  <Link href="/seo-tools/structured-data" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Structured Data Tool</Link>
+                  <Link href="/seo-tools/structured-data-tool" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Structured Data Tool</Link>
                   <Link href="/seo-tools/sitemap" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sitemap Tool</Link>
                   <Link href="/seo-tools/meta-content" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Meta Content Tool</Link>
                 </div>
