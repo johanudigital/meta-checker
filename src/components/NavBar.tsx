@@ -12,17 +12,11 @@ const NavBar: React.FC = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const toggleSeoDropdown = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleSeoDropdown = () => {
     setIsSeoDropdownOpen(!isSeoDropdownOpen);
   };
 
   const closeSeoDropdown = () => {
-    setIsSeoDropdownOpen(false);
-  };
-
-  const closeAllMenus = () => {
-    setIsMobileMenuOpen(false);
     setIsSeoDropdownOpen(false);
   };
 
@@ -97,16 +91,16 @@ const NavBar: React.FC = () => {
             </button>
             {isSeoDropdownOpen && (
               <ul className="bg-gray-100">
-                <li><Link href="/seo-tools/structured-data-tool" onClick={closeAllMenus} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Structured Data Tool</Link></li>
-                <li><Link href="/seo-tools/meta-content-tool" onClick={closeAllMenus} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Meta Content Tool</Link></li>
-                <li><Link href="/seo-tools/sitemap-tool" onClick={closeAllMenus} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Sitemap Tool</Link></li>
+                <li><Link href="/seo-tools/structured-data-tool" onClick={() => { closeSeoDropdown(); setIsMobileMenuOpen(false); }} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Structured Data Tool</Link></li>
+                <li><Link href="/seo-tools/meta-content-tool" onClick={() => { closeSeoDropdown(); setIsMobileMenuOpen(false); }} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Meta Content Tool</Link></li>
+                <li><Link href="/seo-tools/sitemap-tool" onClick={() => { closeSeoDropdown(); setIsMobileMenuOpen(false); }} className="block py-2 px-8 text-sm hover:bg-green-500 transition duration-300">Sitemap Tool</Link></li>
               </ul>
             )}
           </li>
-          <li><Link href="/social-tools" onClick={closeAllMenus} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Social Tools</Link></li>
-          <li><Link href="/graphic-tools" onClick={closeAllMenus} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Graphic Tools</Link></li>
-          <li><Link href="/about" onClick={closeAllMenus} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">About</Link></li>
-          <li><Link href="/contact" onClick={closeAllMenus} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Contact</Link></li>
+          <li><Link href="/social-tools" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Social Tools</Link></li>
+          <li><Link href="/graphic-tools" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Graphic Tools</Link></li>
+          <li><Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">About</Link></li>
+          <li><Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-4 text-sm hover:bg-green-500 transition duration-300">Contact</Link></li>
         </ul>
       </div>
     </nav>
