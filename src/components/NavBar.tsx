@@ -9,7 +9,7 @@ const NavBar = () => {
   return (
     <nav className="container mx-auto px-6 py-4">
       <div className="flex justify-between items-center">
-        <Link href="/" className="text-2xl font-semibold">URL Analyzer Pro</Link>
+        <Link href="/" className="text-2xl font-semibold">SEO Analyzer</Link>
         <div className="hidden md:flex space-x-8">
           <div className="relative group">
             <button 
