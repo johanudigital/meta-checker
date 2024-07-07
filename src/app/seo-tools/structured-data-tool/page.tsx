@@ -31,40 +31,39 @@ export default function StructuredDataTool() {
   const [activeResultTab, setActiveResultTab] = useState<'validation' | 'analysis' | 'optimization'>('validation');
 
   const extractJsonLd = (html: string): string[] => {
-  const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
-  const matches = [];
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    try {
-      // Attempt to parse the JSON to ensure it's valid
-      const jsonData = JSON.parse(match[3].trim());
-      matches.push(JSON.stringify(jsonData));
-    } catch (error) {
-      console.error('Failed to parse JSON-LD:', error);
+    const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      try {
+        const jsonData = JSON.parse(match[3].trim());
+        matches.push(JSON.stringify(jsonData));
+      } catch (error) {
+        console.error('Failed to parse JSON-LD:', error);
+      }
     }
-  }
-  return matches;
-};
+    return matches;
+  };
 
   const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
-      const parsedData = JSON.parse(jsonString);
-      const compacted = await jsonld.compact(parsedData, parsedData['@context']);
-      return compacted as StructuredData;
+      const expanded = await jsonld.expand(JSON.parse(jsonString));
+      if (expanded.length > 0) {
+        const compacted = await jsonld.compact(expanded[0], {});
+        return compacted as StructuredData;
+      }
+      return null;
     } catch (error) {
       console.error('Error validating JSON-LD:', error);
       return null;
     }
   };
 
-const handleSubmit = async () => {
-  if (activeTab === Tab.Code) {
+  const handleSubmit = async () => {
     let jsonLdStrings: string[];
     if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
-      // Input is likely JSON-LD
       jsonLdStrings = [input];
     } else {
-      // Input is likely HTML
       jsonLdStrings = extractJsonLd(input);
     }
 
@@ -78,22 +77,14 @@ const handleSubmit = async () => {
     }
 
     const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
-    const validData = validatedData.filter((data): data is StructuredData => data !== null);
+    const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
 
     setResults({
-      isValid: validData.length > 0,
-      data: validData,
-      error: validData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+      isValid: filteredData.length > 0,
+      data: filteredData,
+      error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
     });
-  } else {
-    // URL functionality will be implemented later
-    setResults({
-      isValid: false,
-      data: null,
-      error: 'URL checking is not implemented yet'
-    });
-  }
-};
+  };
 
   const handleAiAnalysis = async () => {
     if (!results?.isValid || !results.data) {
