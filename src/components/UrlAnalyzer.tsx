@@ -5,16 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from "lucide-react";
 
+interface AnalysisResult {
+  analysis: string;
+}
+
 const UrlAnalyzer = () => {
   const [url, setUrl] = useState<string>('');
-  const [analysis, setAnalysis] = useState<string>('');
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const analyzeUrl = async () => {
     setLoading(true);
     setError(null);
-    setAnalysis('');
+    setAnalysis(null);
 
     try {
       const response = await fetch('/api/analyze-url', {
@@ -29,18 +33,8 @@ const UrlAnalyzer = () => {
         throw new Error('Failed to analyze URL');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Failed to get reader from response');
-      }
-
-      const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        setAnalysis(prevAnalysis => prevAnalysis + chunk);
-      }
+      const data = await response.json();
+      setAnalysis(data);
     } catch (err) {
       setError('Failed to analyze URL. Please try again.');
     } finally {
@@ -81,14 +75,7 @@ const UrlAnalyzer = () => {
         {analysis && (
           <div className="bg-gray-50 p-4 rounded-md">
             <h3 className="font-semibold text-gray-800 mb-2">Analysis Results:</h3>
-            <p className="text-gray-600 whitespace-pre-wrap">{analysis}</p>
-          </div>
-        )}
-
-        {loading && analysis && (
-          <div className="flex items-center justify-center text-blue-500">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            <span className="text-sm">Analyzing...</span>
+            <p className="text-gray-600 whitespace-pre-wrap">{analysis.analysis}</p>
           </div>
         )}
       </CardContent>
