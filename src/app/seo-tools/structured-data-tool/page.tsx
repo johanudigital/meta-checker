@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import jsonld from 'jsonld';
 
 enum Tab {
   URL,
@@ -45,12 +44,16 @@ export default function StructuredDataTool() {
     return matches;
   };
 
-  const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
+  const validateJsonLd = (jsonString: string): StructuredData | null => {
     try {
-      const expanded = await jsonld.expand(JSON.parse(jsonString));
-      if (expanded.length > 0) {
-        const compacted = await jsonld.compact(expanded[0], {});
-        return compacted as StructuredData;
+      const parsed = JSON.parse(jsonString);
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        '@context' in parsed &&
+        '@type' in parsed
+      ) {
+        return parsed as StructuredData;
       }
       return null;
     } catch (error) {
@@ -59,7 +62,7 @@ export default function StructuredDataTool() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     let jsonLdStrings: string[];
     if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
       jsonLdStrings = [input];
@@ -76,13 +79,12 @@ export default function StructuredDataTool() {
       return;
     }
 
-    const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
-    const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
+    const validatedData = jsonLdStrings.map(validateJsonLd).filter((data): data is StructuredData => data !== null);
 
     setResults({
-      isValid: filteredData.length > 0,
-      data: filteredData,
-      error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+      isValid: validatedData.length > 0,
+      data: validatedData,
+      error: validatedData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
     });
   };
 
@@ -131,7 +133,7 @@ export default function StructuredDataTool() {
       setAiOptimization('Failed to optimize structured data');
     }
   };
-  
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Structured Data Tool</h1>
@@ -224,7 +226,7 @@ export default function StructuredDataTool() {
                 {aiAnalysis ? (
                   <p>{aiAnalysis}</p>
                 ) : (
-                  <p>No AI analysis available. Click "Analyze with AI" to generate an analysis.</p>
+                  <p>No AI analysis available. Click &quot;Analyze with AI&quot; to generate an analysis.</p>
                 )}
               </div>
             )}
@@ -235,7 +237,7 @@ export default function StructuredDataTool() {
                 {aiOptimization ? (
                   <p>{aiOptimization}</p>
                 ) : (
-                  <p>No AI optimization available. Click "Optimize with AI" to generate optimizations.</p>
+                  <p>No AI optimization available. Click &quot;Optimize with AI&quot; to generate optimizations.</p>
                 )}
               </div>
             )}
