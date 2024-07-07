@@ -10,8 +10,8 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
   try {
     const { url } = await req.json();
-
-    const stream = await openai.chat.completions.create({
+    
+    const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
@@ -41,22 +41,10 @@ Provide your analysis in a structured format, with clear headings for each secti
 Here is the website URL to analyze: ${url}`
         }
       ],
-      stream: true,
     });
 
-    const encoder = new TextEncoder();
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        for await (const part of stream) {
-          controller.enqueue(encoder.encode(part.choices[0]?.delta?.content || ''));
-        }
-        controller.close();
-      },
-    });
-
-    return new Response(readableStream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    const analysis = completion.choices[0]?.message?.content || 'No analysis available';
+    return NextResponse.json({ analysis });
   } catch (error) {
     console.error('Error analyzing URL:', error);
     return NextResponse.json({ error: 'Failed to analyze URL' }, { status: 500 });
