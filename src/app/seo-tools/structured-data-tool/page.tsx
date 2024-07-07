@@ -36,23 +36,33 @@ export default function StructuredDataTool() {
   // Remove the useEffect hook that was setting up JsonLdDocumentLoader
 
   const extractJsonLd = (html: string): string[] => {
-    const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
+    console.log("Input HTML:", html); // Logging input HTML
+    const regex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
     const matches = [];
     let match;
     while ((match = regex.exec(html)) !== null) {
+      console.log("Matched JSON-LD script:", match[1].trim()); // Logging matched scripts
       try {
-        const jsonData = JSON.parse(match[3].trim());
+        const jsonData = JSON.parse(match[1].trim());
         matches.push(JSON.stringify(jsonData));
       } catch (error) {
-        console.error('Failed to parse JSON-LD:', error);
+        console.error('Failed to parse JSON-LD:', error, match[1].trim());
       }
     }
+    console.log("Extracted JSON-LD:", matches); // Logging extracted JSON-LD
     return matches;
   };
 
   const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
-      const expanded = await jsonld.expand(JSON.parse(jsonString));
+      const jsonData = JSON.parse(jsonString);
+
+      // Ensure the @context URL uses HTTPS
+      if (jsonData['@context'] === 'http://schema.org') {
+        jsonData['@context'] = 'https://schema.org';
+      }
+
+      const expanded = await jsonld.expand(jsonData);
       if (expanded.length > 0) {
         const compacted = await jsonld.compact(expanded[0], {});
         return compacted as StructuredData;
