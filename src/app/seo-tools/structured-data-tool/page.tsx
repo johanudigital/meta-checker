@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import jsonld from 'jsonld';
-import { JsonLdDocumentLoader } from 'jsonld-document-loader';
+
+// Remove the import for JsonLdDocumentLoader
+// import { JsonLdDocumentLoader } from 'jsonld-document-loader';
 
 enum Tab {
   URL,
@@ -31,10 +33,7 @@ export default function StructuredDataTool() {
   const [aiOptimization, setAiOptimization] = useState<string | null>(null);
   const [activeResultTab, setActiveResultTab] = useState<'validation' | 'analysis' | 'optimization'>('validation');
 
-  useEffect(() => {
-    const documentLoader = new JsonLdDocumentLoader();
-    jsonld.documentLoader = documentLoader.documentLoader.bind(documentLoader);
-  }, []);
+  // Remove the useEffect hook that was setting up JsonLdDocumentLoader
 
   const extractJsonLd = (html: string): string[] => {
     const regex = /<script[^>]*type=("|\')application\/ld\+json("|\')[^>]*>([\s\S]*?)<\/script>/gi;
@@ -91,6 +90,7 @@ export default function StructuredDataTool() {
       error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
     });
   };
+
   const handleAiAnalysis = async () => {
     if (!results?.isValid || !results.data) {
       alert('Please validate your structured data first.');
