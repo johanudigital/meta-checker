@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react';
 import Link from 'next/link'
+import NavBar from './components/NavBar'  // We'll create this component
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,16 +21,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-white text-gray-900`}>
         <header className="fixed w-full bg-white bg-opacity-90 backdrop-blur-md z-50">
-          <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-semibold">URL Analyzer Pro</Link>
-            <ul className="flex space-x-4 sm:space-x-8">
-              <li><Link href="/seo-tools" className="hover:text-gray-600 transition-colors">SEO Tools</Link></li>
-              <li><Link href="/social-tools" className="hover:text-gray-600 transition-colors">Social Tools</Link></li>
-              <li><Link href="/graphic-tools" className="hover:text-gray-600 transition-colors">Graphic Tools</Link></li>
-              <li><Link href="/about" className="hover:text-gray-600 transition-colors">About</Link></li>
-              <li><Link href="/contact" className="hover:text-gray-600 transition-colors">Contact</Link></li>
-            </ul>
-          </nav>
+          <NavBar />
         </header>
         <main className="pt-20">
           {children}
