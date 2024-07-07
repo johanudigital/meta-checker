@@ -11,7 +11,7 @@ export default function Home() {
             <p className="text-xl text-gray-600 mb-10">
               Analyze, generate and automate, completely for free. 
             </p>
-            <SEOAnalyzer />
+            <UrlAnalyzer />
           </div>
         </div>
       </section>
