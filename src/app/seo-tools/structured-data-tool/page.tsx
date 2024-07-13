@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import jsonld from 'jsonld';
 
 enum Tab {
   URL,
@@ -48,9 +47,15 @@ export default function StructuredDataTool() {
   const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
       const jsonData = JSON.parse(jsonString);
+
+      // Ensure the @context URL uses HTTPS
       if (jsonData['@context'] === 'http://schema.org') {
         jsonData['@context'] = 'https://schema.org';
       }
+
+      // Dynamically import jsonld
+      const jsonld = await import('jsonld');
+
       const expanded = await jsonld.expand(jsonData);
       if (expanded.length > 0) {
         const compacted = await jsonld.compact(expanded[0], {});
