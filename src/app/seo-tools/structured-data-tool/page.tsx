@@ -203,7 +203,7 @@ export default function StructuredDataTool() {
                 {aiOptimization ? (
                   <p>{aiOptimization}</p>
                 ) : (
-                  <p>No AI optimization available. Click "Optimize with AI" to generate optimizations.</p>
+                  <p>No AI optimization available. Click &quot;Optimize with AI&quot; to generate optimizations.</p>
                 )}
               </div>
             )}
