@@ -9,18 +9,18 @@ const openai = new OpenAI({
 });
 
 // Create a cache to store rate limit information
-const rateLimit = new LRUCache({
+const rateLimit = new LRUCache<string, number>({
   max: 500,
   ttl: 60000, // 1 minute
 });
 
 // Rate limit function
 const rateLimitCheck = (ip: string) => {
-  const tokenCount = rateLimit.get(ip) || 0;
-  if (tokenCount >= 5) {
+  const tokenCount = rateLimit.get(ip);
+  if (typeof tokenCount === 'number' && tokenCount >= 5) {
     return false; // Rate limit exceeded
   }
-  rateLimit.set(ip, tokenCount + 1);
+  rateLimit.set(ip, (tokenCount || 0) + 1);
   return true; // Request allowed
 };
 
