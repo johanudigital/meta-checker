@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { LRUCache } from 'lru-cache';
 
 export const runtime = 'edge';
 
@@ -7,8 +8,32 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Create a cache to store rate limit information
+const rateLimit = new LRUCache({
+  max: 500,
+  ttl: 60000, // 1 minute
+});
+
+// Rate limit function
+const rateLimitCheck = (ip: string) => {
+  const tokenCount = rateLimit.get(ip) || 0;
+  if (tokenCount >= 5) {
+    return false; // Rate limit exceeded
+  }
+  rateLimit.set(ip, tokenCount + 1);
+  return true; // Request allowed
+};
+
 export async function POST(req: Request) {
   try {
+    // Get the user's IP address
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+
+    // Check rate limit
+    if (!rateLimitCheck(ip)) {
+      return NextResponse.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+    }
+
     const { url } = await req.json();
     
     const completion = await openai.chat.completions.create({

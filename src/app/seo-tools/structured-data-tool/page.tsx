@@ -5,9 +5,6 @@ import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import jsonld from 'jsonld';
 
-// Remove the import for JsonLdDocumentLoader
-// import { JsonLdDocumentLoader } from 'jsonld-document-loader';
-
 enum Tab {
   URL,
   Code
@@ -29,19 +26,15 @@ export default function StructuredDataTool() {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Code);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<ValidationResult | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiOptimization, setAiOptimization] = useState<string | null>(null);
-  const [activeResultTab, setActiveResultTab] = useState<'validation' | 'analysis' | 'optimization'>('validation');
-
-  // Remove the useEffect hook that was setting up JsonLdDocumentLoader
+  const [activeResultTab, setActiveResultTab] = useState<'validation' | 'optimization'>('validation');
+  const [lastOptimizationTime, setLastOptimizationTime] = useState<number>(0);
 
   const extractJsonLd = (html: string): string[] => {
-    console.log("Input HTML:", html); // Logging input HTML
     const regex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
     const matches = [];
     let match;
     while ((match = regex.exec(html)) !== null) {
-      console.log("Matched JSON-LD script:", match[1].trim()); // Logging matched scripts
       try {
         const jsonData = JSON.parse(match[1].trim());
         matches.push(JSON.stringify(jsonData));
@@ -49,19 +42,15 @@ export default function StructuredDataTool() {
         console.error('Failed to parse JSON-LD:', error, match[1].trim());
       }
     }
-    console.log("Extracted JSON-LD:", matches); // Logging extracted JSON-LD
     return matches;
   };
 
   const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
     try {
       const jsonData = JSON.parse(jsonString);
-
-      // Ensure the @context URL uses HTTPS
       if (jsonData['@context'] === 'http://schema.org') {
         jsonData['@context'] = 'https://schema.org';
       }
-
       const expanded = await jsonld.expand(jsonData);
       if (expanded.length > 0) {
         const compacted = await jsonld.compact(expanded[0], {});
@@ -101,32 +90,15 @@ export default function StructuredDataTool() {
     });
   };
 
-  const handleAiAnalysis = async () => {
+  const handleAiOptimization = async () => {
     if (!results?.isValid || !results.data) {
       alert('Please validate your structured data first.');
       return;
     }
 
-    try {
-      const response = await fetch('/api/analyze-structured-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ structuredData: results.data }),
-      });
-
-      if (!response.ok) throw new Error('Failed to analyze structured data');
-
-      const data = await response.json();
-      setAiAnalysis(data.analysis);
-    } catch (error) {
-      console.error('Error analyzing structured data:', error);
-      setAiAnalysis('Failed to analyze structured data');
-    }
-  };
-
-  const handleAiOptimization = async () => {
-    if (!results?.isValid || !results.data) {
-      alert('Please validate your structured data first.');
+    const currentTime = Date.now();
+    if (currentTime - lastOptimizationTime < 20000) {
+      alert('Please wait 20 seconds before requesting another optimization.');
       return;
     }
 
@@ -141,6 +113,7 @@ export default function StructuredDataTool() {
 
       const data = await response.json();
       setAiOptimization(data.optimization);
+      setLastOptimizationTime(currentTime);
     } catch (error) {
       console.error('Error optimizing structured data:', error);
       setAiOptimization('Failed to optimize structured data');
@@ -178,9 +151,6 @@ export default function StructuredDataTool() {
               <Button onClick={handleSubmit} className="bg-green-500 text-white">
                 Validate
               </Button>
-              <Button onClick={handleAiAnalysis} className="bg-blue-500 text-white" disabled={!results?.isValid}>
-                Analyze with AI
-              </Button>
               <Button onClick={handleAiOptimization} className="bg-purple-500 text-white" disabled={!results?.isValid}>
                 Optimize with AI
               </Button>
@@ -197,12 +167,6 @@ export default function StructuredDataTool() {
                 className={`mr-2 ${activeResultTab === 'validation' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
                 Validation Results
-              </Button>
-              <Button
-                onClick={() => setActiveResultTab('analysis')}
-                className={`mr-2 ${activeResultTab === 'analysis' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              >
-                AI Analysis
               </Button>
               <Button
                 onClick={() => setActiveResultTab('optimization')}
@@ -233,24 +197,13 @@ export default function StructuredDataTool() {
               </div>
             )}
 
-            {activeResultTab === 'analysis' && (
-              <div>
-                <h2 className="text-xl font-bold mb-2">AI Analysis</h2>
-                {aiAnalysis ? (
-                  <p>{aiAnalysis}</p>
-                ) : (
-                  <p>No AI analysis available. Click &quot;Analyze with AI&quot; to generate an analysis.</p>
-                )}
-              </div>
-            )}
-
             {activeResultTab === 'optimization' && (
               <div>
                 <h2 className="text-xl font-bold mb-2">AI Optimization</h2>
                 {aiOptimization ? (
                   <p>{aiOptimization}</p>
                 ) : (
-                  <p>No AI optimization available. Click &quot;Optimize with AI&quot; to generate optimizations.</p>
+                  <p>No AI optimization available. Click "Optimize with AI" to generate optimizations.</p>
                 )}
               </div>
             )}
