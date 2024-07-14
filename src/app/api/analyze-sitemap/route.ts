@@ -109,6 +109,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ sitemaps });
   } catch (error) {
     console.error('Error processing URL:', error);
-    return NextResponse.json({ error: 'Failed to process URL', details: error.message }, { status: 500 });
+    let errorMessage = 'An unknown error occurred';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    return NextResponse.json({ error: 'Failed to process URL', details: errorMessage }, { status: 500 });
   }
 }
