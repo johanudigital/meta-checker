@@ -54,7 +54,8 @@ export default function StructuredDataTool() {
       }
 
       // Dynamically import jsonld
-      const jsonld = await import('jsonld');
+      const jsonldModule = await import('jsonld');
+      const jsonld = jsonldModule.default;
 
       const expanded = await jsonld.expand(jsonData);
       if (expanded.length > 0) {

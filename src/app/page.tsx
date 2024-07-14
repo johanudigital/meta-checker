@@ -1,40 +1,17 @@
-'use client';
 import UrlAnalyzer from '@/components/UrlAnalyzer';
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      <section className="bg-gray-50 py-20">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6">Analyze your website for SEO in just 1 click</h1>
-            <p className="text-xl text-gray-600 mb-10">
-              Analyze, generate and automate, completely for free. 
-            </p>
-            <UrlAnalyzer />
-          </div>
+    <div className="h-full flex items-center justify-center bg-background text-foreground">
+      <div className="container mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold mb-6 text-primary">Analyze your website for SEO in just 1 click</h1>
+          <p className="text-xl text-muted-foreground mb-10">
+            Analyze, generate and automate, completely for free. 
+          </p>
+          <UrlAnalyzer />
         </div>
-      </section>
-      
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-semibold text-center mb-12">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">Safety Check</h3>
-              <p className="text-gray-600">Ensure the URLs you visit are free from potential threats.</p>
-            </div>
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">Content Analysis</h3>
-              <p className="text-gray-600">Understand the type of content you&apos;re about to access.</p>
-            </div>
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">Sentiment Evaluation</h3>
-              <p className="text-gray-600">Get a quick overview of the overall tone of the linked content.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
