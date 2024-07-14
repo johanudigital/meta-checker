@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 
@@ -22,12 +22,30 @@ interface ValidationResult {
 }
 
 export default function StructuredDataTool() {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.Code);
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.URL);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<ValidationResult | null>(null);
   const [aiOptimization, setAiOptimization] = useState<string | null>(null);
   const [activeResultTab, setActiveResultTab] = useState<'validation' | 'optimization'>('validation');
   const [lastOptimizationTime, setLastOptimizationTime] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const formatUrl = (url: string): string => {
+    url = url.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    return url;
+  };
+
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
 
   const extractJsonLd = (html: string): string[] => {
     const regex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -48,12 +66,10 @@ export default function StructuredDataTool() {
     try {
       const jsonData = JSON.parse(jsonString);
 
-      // Ensure the @context URL uses HTTPS
       if (jsonData['@context'] === 'http://schema.org') {
         jsonData['@context'] = 'https://schema.org';
       }
 
-      // Dynamically import jsonld
       const jsonldModule = await import('jsonld');
       const jsonld = jsonldModule.default;
 
@@ -69,31 +85,71 @@ export default function StructuredDataTool() {
     }
   };
 
-  const handleSubmit = async () => {
-    let jsonLdStrings: string[];
-    if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
-      jsonLdStrings = [input];
-    } else {
-      jsonLdStrings = extractJsonLd(input);
+  const fetchDataFromUrl = async (url: string): Promise<string> => {
+    const formattedUrl = formatUrl(url);
+    if (!isValidUrl(formattedUrl)) {
+      throw new Error('Invalid URL format');
     }
 
-    if (jsonLdStrings.length === 0) {
+    const response = await fetch('/api/optimize-structured-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'fetch-url', data: { url: formattedUrl } }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch data from URL');
+    }
+
+    const data = await response.json();
+    return data.content;
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setResults(null);
+    setAiOptimization(null);
+    try {
+      let jsonLdStrings: string[];
+      if (activeTab === Tab.URL) {
+        const htmlContent = await fetchDataFromUrl(input);
+        jsonLdStrings = extractJsonLd(htmlContent);
+      } else {
+        if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
+          jsonLdStrings = [input];
+        } else {
+          jsonLdStrings = extractJsonLd(input);
+        }
+      }
+
+      if (jsonLdStrings.length === 0) {
+        setResults({
+          isValid: false,
+          data: null,
+          error: 'No valid JSON-LD found in the input. Make sure the input contains properly formatted JSON-LD scripts.'
+        });
+        return;
+      }
+
+      const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
+      const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
+
+      setResults({
+        isValid: filteredData.length > 0,
+        data: filteredData,
+        error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+      });
+    } catch (error) {
+      console.error('Error processing input:', error);
       setResults({
         isValid: false,
         data: null,
-        error: 'No valid JSON-LD found in the input. Make sure the input contains properly formatted JSON-LD scripts.'
+        error: error instanceof Error ? error.message : 'An unknown error occurred while processing the input.'
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
-    const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
-
-    setResults({
-      isValid: filteredData.length > 0,
-      data: filteredData,
-      error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
-    });
   };
 
   const handleAiOptimization = async () => {
@@ -108,11 +164,12 @@ export default function StructuredDataTool() {
       return;
     }
 
+    setIsLoading(true);
     try {
       const response = await fetch('/api/optimize-structured-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ structuredData: results.data }),
+        body: JSON.stringify({ action: 'optimize', data: { structuredData: results.data } }),
       });
 
       if (!response.ok) throw new Error('Failed to optimize structured data');
@@ -123,6 +180,8 @@ export default function StructuredDataTool() {
     } catch (error) {
       console.error('Error optimizing structured data:', error);
       setAiOptimization('Failed to optimize structured data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -154,11 +213,11 @@ export default function StructuredDataTool() {
               className="w-full h-64 p-2 border rounded mb-4"
             />
             <div className="flex flex-col space-y-2">
-              <Button onClick={handleSubmit} className="bg-green-500 text-white">
-                Validate
+              <Button onClick={handleSubmit} className="bg-green-500 text-white" disabled={isLoading}>
+                {isLoading ? 'Processing...' : 'Validate'}
               </Button>
-              <Button onClick={handleAiOptimization} className="bg-purple-500 text-white" disabled={!results?.isValid}>
-                Optimize with AI
+              <Button onClick={handleAiOptimization} className="bg-purple-500 text-white" disabled={!results?.isValid || isLoading}>
+                {isLoading ? 'Optimizing...' : 'Optimize with AI'}
               </Button>
             </div>
           </Card>
