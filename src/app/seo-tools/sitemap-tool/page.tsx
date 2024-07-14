@@ -10,9 +10,9 @@ enum InputType {
 
 interface SitemapEntry {
   loc: string;
-  lastmod?: string;
-  changefreq?: string;
-  priority?: string;
+  lastmod: string | null;
+  changefreq: string | null;
+  priority: string | null;
 }
 
 interface AnalysisResult {
@@ -61,9 +61,9 @@ export default function SitemapAnalyzerTool() {
     const urlElements = xmlDoc.getElementsByTagName("url");
     const entries: SitemapEntry[] = Array.from(urlElements).map(urlElement => ({
       loc: urlElement.getElementsByTagName("loc")[0]?.textContent || '',
-      lastmod: urlElement.getElementsByTagName("lastmod")[0]?.textContent,
-      changefreq: urlElement.getElementsByTagName("changefreq")[0]?.textContent,
-      priority: urlElement.getElementsByTagName("priority")[0]?.textContent,
+      lastmod: urlElement.getElementsByTagName("lastmod")[0]?.textContent || null,
+      changefreq: urlElement.getElementsByTagName("changefreq")[0]?.textContent || null,
+      priority: urlElement.getElementsByTagName("priority")[0]?.textContent || null,
     }));
 
     const result: AnalysisResult = {
