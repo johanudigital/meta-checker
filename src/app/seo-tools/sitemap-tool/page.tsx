@@ -238,7 +238,7 @@ export default function SitemapAnalyzerTool() {
                 </ul>
               </div>
             ) : (
-              <p>No results yet. Please enter a sitemap URL, paste XML content, or upload a file and click "Analyze Sitemap".</p>
+              <p>No results yet. Please enter a sitemap URL, paste XML content, or upload a file and click &quot;Analyze Sitemap&quot;.</p>
             )}
           </div>
           </div>
