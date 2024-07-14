@@ -57,6 +57,11 @@ export default function SitemapAnalyzerTool() {
   const analyzeSitemap = (content: string): AnalysisResult => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(content, "text/xml");
+
+    const parseError = xmlDoc.getElementsByTagName("parsererror");
+    if (parseError.length > 0) {
+      throw new Error("Invalid XML structure");
+    }
     
     const urlElements = xmlDoc.getElementsByTagName("url");
     const entries: SitemapEntry[] = Array.from(urlElements).map(urlElement => ({
@@ -98,7 +103,11 @@ export default function SitemapAnalyzerTool() {
       reader.onload = (e) => {
         const content = e.target?.result as string;
         setXmlInput(content);
-        setAnalysisResult(analyzeSitemap(content));
+        try {
+          setAnalysisResult(analyzeSitemap(content));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        }
       };
       reader.readAsText(file);
     }
@@ -128,7 +137,7 @@ export default function SitemapAnalyzerTool() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Sitemap Analyzer Tool</h1>
+      <h1 className="text-2xl font-bold mb-4">Sitemap Analyzer</h1>
       <div className="flex flex-col md:flex-row gap-4">
         {/* Left Column */}
         <div className="w-full md:w-1/3">
@@ -138,7 +147,7 @@ export default function SitemapAnalyzerTool() {
                 onClick={() => setInputType(InputType.URL)}
                 className={`mr-2 px-4 py-2 rounded ${inputType === InputType.URL ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
-                URL
+                Find Sitemap
               </button>
               <button
                 onClick={() => setInputType(InputType.XML)}
@@ -241,7 +250,7 @@ export default function SitemapAnalyzerTool() {
               <p>No results yet. Please enter a sitemap URL, paste XML content, or upload a file and click &quot;Analyze Sitemap&quot;.</p>
             )}
           </div>
-          </div>
+        </div>
       </div>
     </div>
   );

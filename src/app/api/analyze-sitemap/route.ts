@@ -27,7 +27,6 @@ async function fetchAndParseSitemap(url: string, sitemaps: string[]): Promise<vo
   const result = parser.parse(content);
 
   if (result.sitemapindex && result.sitemapindex.sitemap) {
-    // This is a sitemap index
     const sitemapEntries = Array.isArray(result.sitemapindex.sitemap) 
       ? result.sitemapindex.sitemap 
       : [result.sitemapindex.sitemap];
@@ -36,12 +35,10 @@ async function fetchAndParseSitemap(url: string, sitemaps: string[]): Promise<vo
       if (entry.loc && !sitemaps.includes(entry.loc)) {
         sitemaps.push(entry.loc);
         if (sitemaps.length >= MAX_SITEMAPS) return;
-        // Recursively fetch nested sitemaps
         await fetchAndParseSitemap(entry.loc, sitemaps);
       }
     }
   } else if (result.urlset && result.urlset.url) {
-    // This is a regular sitemap
     if (!sitemaps.includes(url)) {
       sitemaps.push(url);
     }
@@ -100,7 +97,6 @@ export async function POST(request: Request) {
     const { url } = await request.json();
     console.log('Received URL:', url);
 
-    // Ensure the URL has a protocol
     const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
     const domain = new URL(formattedUrl).hostname;
     
