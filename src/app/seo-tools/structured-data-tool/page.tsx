@@ -315,7 +315,7 @@ export default function StructuredDataTool() {
                 {aiOptimization ? (
                   <AIOptimizationDisplay optimization={aiOptimization} />
                 ) : (
-                  <p>No AI optimization available. Click "Optimize with AI" to generate optimizations.</p>
+                  <p>No AI optimization available. Click &quot;Optimize with AI&quot; to generate optimizations.</p>
                 )}
               </div>
             )}
@@ -326,7 +326,7 @@ export default function StructuredDataTool() {
                 {aiSuggestion ? (
                   <AIOptimizationDisplay optimization={aiSuggestion} />
                 ) : (
-                  <p>No AI suggestion available. Click "Suggest Structured Data" to generate suggestions.</p>
+                  <p>No AI suggestion available. Click &quot;Suggest Structured Data&quot; to generate suggestions.</p>
                 )}
               </div>
             )}
