@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
+import AIOptimizationDisplay from '../../../components/ui/AIOptimizationDisplay';
 
 enum Tab {
   URL,
@@ -26,8 +27,9 @@ export default function StructuredDataTool() {
   const [input, setInput] = useState('');
   const [results, setResults] = useState<ValidationResult | null>(null);
   const [aiOptimization, setAiOptimization] = useState<string | null>(null);
-  const [activeResultTab, setActiveResultTab] = useState<'validation' | 'optimization'>('validation');
-  const [lastOptimizationTime, setLastOptimizationTime] = useState<number>(0);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [activeResultTab, setActiveResultTab] = useState<'validation' | 'optimization' | 'suggestion'>('validation');
+  const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const formatUrl = (url: string): string => {
@@ -159,7 +161,7 @@ export default function StructuredDataTool() {
     }
 
     const currentTime = Date.now();
-    if (currentTime - lastOptimizationTime < 20000) {
+    if (currentTime - lastApiCallTime < 20000) {
       alert('Please wait 20 seconds before requesting another optimization.');
       return;
     }
@@ -176,10 +178,46 @@ export default function StructuredDataTool() {
 
       const data = await response.json();
       setAiOptimization(data.optimization);
-      setLastOptimizationTime(currentTime);
+      setLastApiCallTime(currentTime);
     } catch (error) {
       console.error('Error optimizing structured data:', error);
       setAiOptimization('Failed to optimize structured data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAiSuggestion = async () => {
+    const currentTime = Date.now();
+    if (currentTime - lastApiCallTime < 20000) {
+      alert('Please wait 20 seconds before requesting another suggestion.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let htmlContent: string;
+      if (activeTab === Tab.URL) {
+        htmlContent = await fetchDataFromUrl(input);
+      } else {
+        htmlContent = input;
+      }
+
+      const response = await fetch('/api/optimize-structured-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'suggest', data: { htmlContent } }),
+      });
+
+      if (!response.ok) throw new Error('Failed to suggest structured data');
+
+      const data = await response.json();
+      setAiSuggestion(data.suggestion);
+      setLastApiCallTime(currentTime);
+      setActiveResultTab('suggestion');
+    } catch (error) {
+      console.error('Error suggesting structured data:', error);
+      setAiSuggestion('Failed to suggest structured data');
     } finally {
       setIsLoading(false);
     }
@@ -219,6 +257,9 @@ export default function StructuredDataTool() {
               <Button onClick={handleAiOptimization} className="bg-purple-500 text-white" disabled={!results?.isValid || isLoading}>
                 {isLoading ? 'Optimizing...' : 'Optimize with AI'}
               </Button>
+              <Button onClick={handleAiSuggestion} className="bg-blue-500 text-white" disabled={isLoading}>
+                {isLoading ? 'Suggesting...' : 'Suggest Structured Data'}
+              </Button>
             </div>
           </Card>
         </div>
@@ -235,9 +276,15 @@ export default function StructuredDataTool() {
               </Button>
               <Button
                 onClick={() => setActiveResultTab('optimization')}
-                className={activeResultTab === 'optimization' ? 'bg-blue-500 text-white' : 'bg-gray-200'}
+                className={`mr-2 ${activeResultTab === 'optimization' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
                 AI Optimization
+              </Button>
+              <Button
+                onClick={() => setActiveResultTab('suggestion')}
+                className={activeResultTab === 'suggestion' ? 'bg-blue-500 text-white' : 'bg-gray-200'}
+              >
+                AI Suggestion
               </Button>
             </div>
             
@@ -266,9 +313,20 @@ export default function StructuredDataTool() {
               <div>
                 <h2 className="text-xl font-bold mb-2">AI Optimization</h2>
                 {aiOptimization ? (
-                  <p>{aiOptimization}</p>
+                  <AIOptimizationDisplay optimization={aiOptimization} />
                 ) : (
-                  <p>No AI optimization available. Click &quot;Optimize with AI&quot; to generate optimizations.</p>
+                  <p>No AI optimization available. Click "Optimize with AI" to generate optimizations.</p>
+                )}
+              </div>
+            )}
+
+            {activeResultTab === 'suggestion' && (
+              <div>
+                <h2 className="text-xl font-bold mb-2">AI Suggestion</h2>
+                {aiSuggestion ? (
+                  <AIOptimizationDisplay optimization={aiSuggestion} />
+                ) : (
+                  <p>No AI suggestion available. Click "Suggest Structured Data" to generate suggestions.</p>
                 )}
               </div>
             )}
