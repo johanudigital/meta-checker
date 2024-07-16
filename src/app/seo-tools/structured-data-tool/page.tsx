@@ -50,41 +50,39 @@ export default function StructuredDataTool() {
   };
 
   const extractJsonLd = (html: string): string[] => {
-    const regex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    const regex = /<script\s+type=(["'])application\/ld\+json\1[^>]*>([\s\S]*?)<\/script>/gi;
     const matches = [];
     let match;
     while ((match = regex.exec(html)) !== null) {
-      try {
-        const jsonData = JSON.parse(match[1].trim());
-        matches.push(JSON.stringify(jsonData));
-      } catch (error) {
-        console.error('Failed to parse JSON-LD:', error, match[1].trim());
-      }
+      matches.push(match[2].trim());
     }
     return matches;
   };
 
-  const validateJsonLd = async (jsonString: string): Promise<StructuredData | null> => {
+  const validateJsonLd = (jsonString: string): StructuredData[] | null => {
     try {
       const jsonData = JSON.parse(jsonString);
-
-      if (jsonData['@context'] === 'http://schema.org') {
-        jsonData['@context'] = 'https://schema.org';
+      console.log('Parsed JSON data:', JSON.stringify(jsonData, null, 2));
+      if (typeof jsonData === 'object' && jsonData !== null) {
+        // Check if it's a single object with @graph property
+        if (jsonData['@graph'] && Array.isArray(jsonData['@graph'])) {
+          console.log('Found @graph array');
+          return jsonData['@graph'].filter(item => item['@context'] || jsonData['@context']);
+        }
+        
+        // Check if it's an array of objects or a single object
+        const items = Array.isArray(jsonData) ? jsonData : [jsonData];
+        return items.filter(item => {
+          const hasContext = item['@context'] || jsonData['@context'];
+          const hasType = item['@type'];
+          console.log(`Item validation: hasContext=${hasContext}, hasType=${hasType}`);
+          return hasContext && hasType;
+        });
       }
-
-      const jsonldModule = await import('jsonld');
-      const jsonld = jsonldModule.default;
-
-      const expanded = await jsonld.expand(jsonData);
-      if (expanded.length > 0) {
-        const compacted = await jsonld.compact(expanded[0], {});
-        return compacted as StructuredData;
-      }
-      return null;
     } catch (error) {
       console.error('Error validating JSON-LD:', error);
-      return null;
     }
+    return null;
   };
 
   const fetchDataFromUrl = async (url: string): Promise<string> => {
@@ -118,29 +116,27 @@ export default function StructuredDataTool() {
         const htmlContent = await fetchDataFromUrl(input);
         jsonLdStrings = extractJsonLd(htmlContent);
       } else {
-        if (input.trim().startsWith('{') || input.trim().startsWith('[')) {
-          jsonLdStrings = [input];
-        } else {
-          jsonLdStrings = extractJsonLd(input);
+        jsonLdStrings = input.trim().startsWith('{') || input.trim().startsWith('[')
+          ? [input]
+          : extractJsonLd(input);
+      }
+
+      console.log('Extracted JSON-LD strings:', jsonLdStrings);
+
+      let validatedData: StructuredData[] = [];
+      for (const jsonLdString of jsonLdStrings) {
+        const validItems = validateJsonLd(jsonLdString);
+        if (validItems) {
+          validatedData = validatedData.concat(validItems);
         }
       }
 
-      if (jsonLdStrings.length === 0) {
-        setResults({
-          isValid: false,
-          data: null,
-          error: 'No valid JSON-LD found in the input. Make sure the input contains properly formatted JSON-LD scripts.'
-        });
-        return;
-      }
-
-      const validatedData = await Promise.all(jsonLdStrings.map(validateJsonLd));
-      const filteredData = validatedData.filter((data): data is StructuredData => data !== null);
+      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
 
       setResults({
-        isValid: filteredData.length > 0,
-        data: filteredData,
-        error: filteredData.length === 0 ? 'JSON-LD found but failed validation. Please check the format.' : null
+        isValid: validatedData.length > 0,
+        data: validatedData,
+        error: validatedData.length === 0 ? 'No valid JSON-LD found' : null
       });
     } catch (error) {
       console.error('Error processing input:', error);
