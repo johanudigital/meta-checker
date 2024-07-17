@@ -43,24 +43,46 @@ const formatAdditionalConsiderations = (text: string): JSX.Element => {
 
 const AIOptimizationDisplay: React.FC<{ optimization: string }> = ({ optimization }) => {
   const parseOptimizationData = (content: string): OptimizationData => {
-    const parts = content.split('Additional Considerations:');
-    const suggestionsContent = parts[0];
-    const additionalConsiderations = parts[1] ? parts[1].trim() : undefined;
-
-    const suggestions = suggestionsContent.split('Suggestion #').slice(1).map((suggestion, index) => {
-      const [jsonLd, rest] = suggestion.split('Explanation:');
-      const [explanation, priorityAndJustification] = rest.split('Priority:');
-      const [priority, justification] = priorityAndJustification.split('Justification:');
-      
-      return {
-        number: index + 1,
-        jsonLd: jsonLd.trim(),
-        explanation: explanation.trim(),
-        priority: priority.trim() as 'High' | 'Medium' | 'Low',
-        justification: justification.trim(),
-      };
-    });
-
+    if (!content) {
+      console.error('Empty content received in parseOptimizationData');
+      return { suggestions: [] };
+    }
+  
+    let suggestions: OptimizationSuggestion[] = [];
+    let additionalConsiderations: string | undefined;
+  
+    try {
+      const parts = content.split('Additional Considerations:');
+      const suggestionsContent = parts[0];
+      additionalConsiderations = parts[1]?.trim();
+  
+      suggestions = suggestionsContent.split(/Suggestion #\d+:/)
+        .filter(Boolean)
+        .map((suggestion, index) => {
+          const jsonLdMatch = suggestion.match(/```json\n([\s\S]*?)\n```/);
+          const jsonLd = jsonLdMatch ? jsonLdMatch[1].trim() : '';
+          
+          const explanationMatch = suggestion.match(/Explanation:([\s\S]*?)Priority:/);
+          const explanation = explanationMatch ? explanationMatch[1].trim() : '';
+          
+          const priorityMatch = suggestion.match(/Priority:\s*(High|Medium|Low)/);
+          const priority = (priorityMatch ? priorityMatch[1] : 'Low') as 'High' | 'Medium' | 'Low';
+          
+          const justificationMatch = suggestion.match(/Justification:([\s\S]*?)(?=Suggestion #|$)/);
+          const justification = justificationMatch ? justificationMatch[1].trim() : '';
+  
+          return {
+            number: index + 1,
+            jsonLd,
+            explanation,
+            priority,
+            justification,
+          };
+        });
+    } catch (error) {
+      console.error('Error parsing optimization data:', error);
+    }
+  
     return { suggestions, additionalConsiderations };
   };
 
