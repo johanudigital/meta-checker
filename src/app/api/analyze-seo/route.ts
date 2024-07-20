@@ -4,11 +4,9 @@ import * as cheerio from 'cheerio';
 
 export async function POST(request: NextRequest) {
   const { url } = await request.json();
-
   if (!url) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
   }
-
   try {
     const formattedUrl = formatUrl(url);
     const results = await checkSEO(formattedUrl);
@@ -28,7 +26,12 @@ function formatUrl(url: string): string {
 
 async function checkSEO(url: string) {
   try {
-    const { data } = await axios.get(url);
+    const { data } = await axios.get(url, {
+      timeout: 10000, // 10 seconds timeout
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
     const $ = cheerio.load(data);
 
     return {
@@ -41,13 +44,22 @@ async function checkSEO(url: string) {
     };
   } catch (error) {
     console.error(`Error checking SEO for ${url}:`, error);
-    return {
-      error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.'
-    };
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        return { error: 'Request timed out. The website might be slow or unavailable.' };
+      }
+      if (error.response) {
+        return { error: `Server responded with status code ${error.response.status}` };
+      }
+      if (error.request) {
+        return { error: 'No response received from the server' };
+      }
+    }
+    return { error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.' };
   }
 }
 
-function checkTitleTag($: cheerio.CheerioAPI) {
+function checkTitleTag($: cheerio.CheerioAPI | cheerio.Root) {
   const title = $('title').text();
   return {
     value: title,
@@ -58,7 +70,7 @@ function checkTitleTag($: cheerio.CheerioAPI) {
   };
 }
 
-function checkMetaDescription($: cheerio.CheerioAPI) {
+function checkMetaDescription($: cheerio.CheerioAPI | cheerio.Root) {
   const description = $('meta[name="description"]').attr('content');
   return {
     value: description,
@@ -69,7 +81,7 @@ function checkMetaDescription($: cheerio.CheerioAPI) {
   };
 }
 
-function checkHeadings($: cheerio.CheerioAPI) {
+function checkHeadings($: cheerio.CheerioAPI | cheerio.Root) {
   const h1Count = $('h1').length;
   return {
     value: h1Count,
@@ -80,7 +92,7 @@ function checkHeadings($: cheerio.CheerioAPI) {
   };
 }
 
-function checkImages($: cheerio.CheerioAPI) {
+function checkImages($: cheerio.CheerioAPI | cheerio.Root) {
   const images = $('img');
   const imagesWithoutAlt = images.filter((i, el) => !$(el).attr('alt'));
   return {
