@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 export async function POST(request: NextRequest) {
   const { url } = await request.json();
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     const results = await checkSEO(formattedUrl);
     return NextResponse.json(results);
   } catch (error) {
+    console.error('Error in POST handler:', error);
     return NextResponse.json({ error: 'Error checking SEO' }, { status: 500 });
   }
 }
@@ -45,7 +46,6 @@ async function checkSEO(url: string) {
     };
   }
 }
-
 
 function checkTitleTag($: cheerio.CheerioAPI) {
   const title = $('title').text();
