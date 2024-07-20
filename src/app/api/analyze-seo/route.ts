@@ -1,5 +1,5 @@
+import puppeteer from 'puppeteer';
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 export async function POST(request: NextRequest) {
@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
   }
   try {
     const formattedUrl = formatUrl(url);
-    const results = await checkSEO(formattedUrl);
+    const results = await checkSEOWithPuppeteer(formattedUrl);
+    if ('error' in results) {
+      return NextResponse.json({ error: results.error }, { status: results.status });
+    }
     return NextResponse.json(results);
   } catch (error) {
     console.error('Error in POST handler:', error);
@@ -24,17 +27,15 @@ function formatUrl(url: string): string {
   return url;
 }
 
-async function checkSEO(url: string) {
+async function checkSEOWithPuppeteer(url: string) {
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
   try {
-    const { data } = await axios.get(url, {
-      timeout: 10000, // 10 seconds timeout
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
+    await page.goto(url, { waitUntil: 'networkidle2' });
+    const data = await page.content();
     const $ = cheerio.load(data);
 
-    return {
+    const result = {
       url,
       title: checkTitleTag($),
       metaDescription: checkMetaDescription($),
@@ -42,25 +43,21 @@ async function checkSEO(url: string) {
       images: checkImages($),
       ssl: checkSSL(url),
     };
+
+    await browser.close();
+    return result;
   } catch (error) {
+    await browser.close();
     console.error(`Error checking SEO for ${url}:`, error);
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        return { error: 'Request timed out. The website might be slow or unavailable.' };
-      }
-      if (error.response) {
-        return { error: `Server responded with status code ${error.response.status}` };
-      }
-      if (error.request) {
-        return { error: 'No response received from the server' };
-      }
-    }
-    return { error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.' };
+    return { 
+      error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.', 
+      status: 500 
+    };
   }
 }
 
 function checkTitleTag($: cheerio.CheerioAPI | cheerio.Root) {
-  const title = $('title').text();
+  const title = $('title').text() || '';
   return {
     value: title,
     status: title.length > 0 && title.length <= 60 ? 'ok' : 'warning',
@@ -71,7 +68,7 @@ function checkTitleTag($: cheerio.CheerioAPI | cheerio.Root) {
 }
 
 function checkMetaDescription($: cheerio.CheerioAPI | cheerio.Root) {
-  const description = $('meta[name="description"]').attr('content');
+  const description = $('meta[name="description"]').attr('content') || '';
   return {
     value: description,
     status: description && description.length <= 160 ? 'ok' : 'warning',

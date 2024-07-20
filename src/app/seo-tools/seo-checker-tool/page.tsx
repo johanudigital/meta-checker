@@ -69,7 +69,7 @@ export default function SEOChecker() {
         </span>
         {result.message}
       </p>
-      <p className="text-xs text-gray-500">Value: {result.value.toString()}</p>
+      <p className="text-xs text-gray-500">Value: {result.value !== undefined ? result.value.toString() : 'N/A'}</p>
     </div>
   );
 
