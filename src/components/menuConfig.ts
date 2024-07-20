@@ -11,6 +11,7 @@ export const menuItems: MenuItem[] = [
       { label: 'Structured Data Tool', href: '/seo-tools/structured-data-tool' },
       { label: 'Robots.txt Tool', href: '/seo-tools/robots-txt-tool' },
       { label: 'Sitemap Tool', href: '/seo-tools/sitemap-tool' },
+      { label: 'SEO Checker Tool', href: '/seo-tools/seo-checker-tool' },
     ],
   },
   { label: 'About', href: '/about' },
