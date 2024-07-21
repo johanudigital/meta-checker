@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
+import type { CheerioAPI } from 'cheerio';
 
 export async function POST(request: NextRequest) {
   const { url } = await request.json();
@@ -10,10 +10,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const formattedUrl = formatUrl(url);
-    const results = await checkSEOWithPuppeteer(formattedUrl);
-    if ('error' in results) {
-      return NextResponse.json({ error: results.error }, { status: results.status });
-    }
+    const results = await checkSEO(formattedUrl);
     return NextResponse.json(results);
   } catch (error) {
     console.error('Error in POST handler:', error);
@@ -28,34 +25,17 @@ function formatUrl(url: string): string {
   return url;
 }
 
-async function getChromePath() {
-  if (process.env.NODE_ENV === 'production') {
-    return await chromium.executablePath;
-  }
-  
-  // For MacOS
-  return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  // For Windows, use: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
-  // For Linux, use: '/usr/bin/google-chrome'
-}
-
-async function checkSEOWithPuppeteer(url: string) {
-  let browser = null;
+async function checkSEO(url: string) {
   try {
-    const executablePath = await getChromePath();
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath,
-      headless: true,
-      defaultViewport: chromium.defaultViewport,
-      ignoreHTTPSErrors: true,
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle0' });
-    const content = await page.content();
-    const $ = cheerio.load(content);
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-    const result = {
+    return {
       url,
       title: checkTitleTag($),
       metaDescription: checkMetaDescription($),
@@ -63,23 +43,17 @@ async function checkSEOWithPuppeteer(url: string) {
       images: checkImages($),
       ssl: checkSSL(url),
     };
-
-    return result;
   } catch (error) {
     console.error(`Error checking SEO for ${url}:`, error);
     return { 
-      error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.', 
+      error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.',
       status: 500 
     };
-  } finally {
-    if (browser !== null) {
-      await browser.close();
-    }
   }
 }
 
-function checkTitleTag($: cheerio.CheerioAPI | cheerio.Root) {
-  const title = $('title').text() || '';
+function checkTitleTag($: CheerioAPI) {
+  const title = $('title').text().trim();
   return {
     value: title,
     status: title.length > 0 && title.length <= 60 ? 'ok' : 'warning',
@@ -89,8 +63,8 @@ function checkTitleTag($: cheerio.CheerioAPI | cheerio.Root) {
   };
 }
 
-function checkMetaDescription($: cheerio.CheerioAPI | cheerio.Root) {
-  const description = $('meta[name="description"]').attr('content') || '';
+function checkMetaDescription($: CheerioAPI) {
+  const description = $('meta[name="description"]').attr('content')?.trim() || '';
   return {
     value: description,
     status: description && description.length <= 160 ? 'ok' : 'warning',
@@ -100,7 +74,7 @@ function checkMetaDescription($: cheerio.CheerioAPI | cheerio.Root) {
   };
 }
 
-function checkHeadings($: cheerio.CheerioAPI | cheerio.Root) {
+function checkHeadings($: CheerioAPI) {
   const h1Count = $('h1').length;
   return {
     value: h1Count,
@@ -111,7 +85,7 @@ function checkHeadings($: cheerio.CheerioAPI | cheerio.Root) {
   };
 }
 
-function checkImages($: cheerio.CheerioAPI | cheerio.Root) {
+function checkImages($: CheerioAPI) {
   const images = $('img');
   const imagesWithoutAlt = images.filter((i, el) => !$(el).attr('alt'));
   return {

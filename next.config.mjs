@@ -1,29 +1,19 @@
+// next.config.mjs
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push('chrome-aws-lambda');
+  reactStrictMode: true,
+  swcMinify: true,
+  webpack: (config, { dev, isServer }) => {
+    // Optimize only for production builds
+    if (!dev && !isServer) {
+      Object.assign(config.resolve.alias, {
+        'react/jsx-runtime.js': 'preact/compat/jsx-runtime',
+        react: 'preact/compat',
+        'react-dom/test-utils': 'preact/test-utils',
+        'react-dom': 'preact/compat',
+      });
     }
-
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        'rdf-canonize-native': false,
-        'crypto': false,
-        'stream': false,
-      };
-    }
-
-    // Exclude source map files and other unnecessary files from being processed
-    config.module.rules.push({
-      test: /\.js$/,
-      loader: 'ignore-loader',
-      include: [
-        /node_modules\/chrome-aws-lambda/,
-        /node_modules\/puppeteer-core/,
-      ],
-    });
-
     return config;
   },
 };

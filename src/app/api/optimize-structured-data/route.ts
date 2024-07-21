@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { JSDOM } from 'jsdom';
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
+import fetch from 'node-fetch';
 
 export const maxDuration = 60; // This function can run for a maximum of 60 seconds
 export const dynamic = 'force-dynamic';
@@ -34,37 +33,17 @@ async function htmlToPlainText(html: string): Promise<string> {
   return document.body.textContent || "";
 }
 
-async function getChromePath() {
-  if (process.env.NODE_ENV === 'production') {
-    return await chromium.executablePath;
-  }
-  
-  // For MacOS
-  return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  // For Windows, use: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
-  // For Linux, use: '/usr/bin/google-chrome'
-}
-
-async function fetchUrlWithPuppeteer(url: string): Promise<string> {
-  let browser = null;
+async function fetchUrlContent(url: string): Promise<string> {
   try {
-    const executablePath = await getChromePath();
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath,
-      headless: true,
-      defaultViewport: chromium.defaultViewport,
-      ignoreHTTPSErrors: true,
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    await page.goto(url, { waitUntil: 'networkidle0' });
-    const content = await page.content();
-    return content;
-  } finally {
-    if (browser !== null) {
-      await browser.close();
-    }
+    return await response.text();
+  } catch (error) {
+    console.error('Error fetching URL:', error);
+    throw new Error('Failed to fetch URL content');
   }
 }
 
@@ -78,10 +57,10 @@ export async function POST(req: Request) {
       }
 
       try {
-        const content = await fetchUrlWithPuppeteer(data.url);
+        const content = await fetchUrlContent(data.url);
         return NextResponse.json({ content });
       } catch (error) {
-        console.error('Error fetching URL with Puppeteer:', error);
+        console.error('Error fetching URL:', error);
         return NextResponse.json({ error: 'Failed to fetch URL content' }, { status: 500 });
       }
     } else if (action === 'optimize') {
