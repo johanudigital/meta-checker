@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { JSDOM } from 'jsdom';
-import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 
 export const maxDuration = 60; // This function can run for a maximum of 60 seconds
 export const dynamic = 'force-dynamic';
@@ -33,19 +34,37 @@ async function htmlToPlainText(html: string): Promise<string> {
   return document.body.textContent || "";
 }
 
+async function getChromePath() {
+  if (process.env.NODE_ENV === 'production') {
+    return await chromium.executablePath;
+  }
+  
+  // For MacOS
+  return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  // For Windows, use: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+  // For Linux, use: '/usr/bin/google-chrome'
+}
+
 async function fetchUrlWithPuppeteer(url: string): Promise<string> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  let browser = null;
   try {
+    const executablePath = await getChromePath();
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath,
+      headless: true,
+      defaultViewport: chromium.defaultViewport,
+      ignoreHTTPSErrors: true,
+    });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
     await page.goto(url, { waitUntil: 'networkidle0' });
     const content = await page.content();
     return content;
   } finally {
-    await browser.close();
+    if (browser !== null) {
+      await browser.close();
+    }
   }
 }
 
@@ -71,7 +90,14 @@ export async function POST(req: Request) {
         messages: [
           {
             role: "system",
-            content: `You are an AI assistant specialized in optimizing structured data for websites. Your role is to analyze provided structured data and suggest improvements or additions to enhance website SEO and online presence. You must provide detailed explanations and justifications for each suggestion.`
+            content: `You are an AI assistant specialized in optimizing structured data for websites. Your role is to analyze provided structured data and suggest improvements or additions to enhance website SEO and online presence. You must provide detailed explanations and justifications for each suggestion.
+            Key requirements:
+            
+            - Base all suggestions on the provided data and general best practices.
+            - Do not use external sources or make assumptions about website content beyond what's provided.
+            - Provide detailed explanations for each suggestion.
+            - Adhere to schema.org standards and Google's structured data guidelines.
+            - Present your output in a clear, structured format with explanations.`
           },
           {
             role: "user",
@@ -82,9 +108,11 @@ export async function POST(req: Request) {
             Follow these steps in your analysis and response:
             
             Input Analysis:
+
             - Identify the schema.org type.
             - List all present properties.
             - Identify missing core properties for the schema type.
+            
             
             Optimization Suggestions:
             For each suggestion, provide:
@@ -102,9 +130,10 @@ export async function POST(req: Request) {
             Justification: [Reason for the assigned priority]
             
             Additional Considerations:
-            - Suggest any relevant nested entities that could enhance the structured data.
-            - Identify opportunities for cross-linking entities within the structured data.
-            - Point out any inconsistencies or potential improvements in existing properties.
+            
+            Suggest any relevant nested entities that could enhance the structured data.
+            Identify opportunities for cross-linking entities within the structured data.
+            Point out any inconsistencies or potential improvements in existing properties.
             
             Ensure your response is comprehensive, providing clear explanations and justifications for each suggested optimization.`
           }
