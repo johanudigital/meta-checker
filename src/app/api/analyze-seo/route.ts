@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
-import type { CheerioAPI } from 'cheerio';
+type CheerioAPI = ReturnType<typeof cheerio.load>;
+
 
 export async function POST(request: NextRequest) {
   const { url } = await request.json();
