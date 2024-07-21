@@ -1,6 +1,7 @@
-import puppeteer from 'puppeteer';
 import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
+import chromium from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 
 export async function POST(request: NextRequest) {
   const { url } = await request.json();
@@ -27,13 +28,32 @@ function formatUrl(url: string): string {
   return url;
 }
 
+async function getChromePath() {
+  if (process.env.NODE_ENV === 'production') {
+    return await chromium.executablePath;
+  }
+  
+  // For MacOS
+  return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  // For Windows, use: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+  // For Linux, use: '/usr/bin/google-chrome'
+}
+
 async function checkSEOWithPuppeteer(url: string) {
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
+  let browser = null;
   try {
-    await page.goto(url, { waitUntil: 'networkidle2' });
-    const data = await page.content();
-    const $ = cheerio.load(data);
+    const executablePath = await getChromePath();
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath,
+      headless: true,
+      defaultViewport: chromium.defaultViewport,
+      ignoreHTTPSErrors: true,
+    });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle0' });
+    const content = await page.content();
+    const $ = cheerio.load(content);
 
     const result = {
       url,
@@ -44,15 +64,17 @@ async function checkSEOWithPuppeteer(url: string) {
       ssl: checkSSL(url),
     };
 
-    await browser.close();
     return result;
   } catch (error) {
-    await browser.close();
     console.error(`Error checking SEO for ${url}:`, error);
     return { 
       error: 'Unable to fetch or analyze this URL. Please check if the URL is correct and accessible.', 
       status: 500 
     };
+  } finally {
+    if (browser !== null) {
+      await browser.close();
+    }
   }
 }
 
